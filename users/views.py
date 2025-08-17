@@ -4,6 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Payment
+import logging
 from .serializers import PaymentSerializer, UserSerializer, RegistrationSerializer
 
 User = get_user_model()
@@ -28,3 +29,7 @@ class RegistrationAPIView(generics.CreateAPIView):
 
 
     permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        logging.info('Request received for registration.')
+        return super().post(request, *args, **kwargs)
