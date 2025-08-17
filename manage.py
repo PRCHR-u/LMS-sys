@@ -2,11 +2,11 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-
+print(f"DJANGO_SETTINGS_MODULE is set to: {os.environ.get('DJANGO_SETTINGS_MODULE')}")
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mysite.settings')
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'LMS-sys.settings'
 
     # Add the project root directory to sys.path
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))

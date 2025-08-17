@@ -9,14 +9,14 @@ class User(AbstractUser):
     pass
 
 class Payment(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='payments')
-    payment_date = models.DateField()
-    paid_course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
-    paid_lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, blank=True, related_name='payments')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    payment_date = models.DateTimeField(auto_now_add=True)
+    paid_course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True)
+    paid_lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=True, blank=True)
+    amount = models.PositiveIntegerField()
 
     PAYMENT_METHODS = [
-        ('cash', 'Наличные'),
+        ('cash', 'Наличные'), # This was already here, keeping it.
         ('transfer', 'Перевод на счет'),
     ]
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS)
@@ -27,3 +27,9 @@ class Payment(models.Model):
         elif self.paid_lesson:
             return f"{self.user.email} paid for lesson {self.paid_lesson.title} on {self.payment_date}"
         return f"{self.user.email} made a payment on {self.payment_date}"
+
+    class Meta:
+        verbose_name = 'платеж'
+        verbose_name_plural = 'платежи'
+        ordering = ['-payment_date']
+
