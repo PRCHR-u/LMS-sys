@@ -30,14 +30,34 @@ from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
 from users.views import PaymentViewSet, RegistrationAPIView, UserViewSet
 
+# Создаем роутер для пользователей
 router = DefaultRouter()
-router.register(r'payments', PaymentViewSet, basename='payments')
+router.register(r'users', UserViewSet, basename='user')
+router.register(r'payments', PaymentViewSet, basename='payment')
 
 urlpatterns = [
+    # Админка Django
     path('admin/', admin.site.urls),
-    path('materials/', include('materials.urls')),
+    
+    # API маршруты
+    path('api/', include([
+        # Маршруты для материалов (курсы и уроки)
+        path('materials/', include('materials.urls')),
+        
+        # Маршруты для пользователей и платежей
+        path('', include(router.urls)),
+        
+        # Дополнительные маршруты для пользователей
+        path('users/', include('users.urls')),
+        
+        # Аутентификация JWT
+        path('auth/', include([
+            path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+            path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+            path('register/', RegistrationAPIView.as_view(), name='register'),
+        ])),
+    ])),
+    
+    # Корневой маршрут для API
     path('', include(router.urls)),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    re_path(r'^auth/register/$', RegistrationAPIView.as_view(), name='register'),
 ]
