@@ -1,7 +1,10 @@
-from django.urls import path
-from users.views import ProfileUpdateAPIView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import UserViewSet
+
+router = DefaultRouter()
+router.register(r'users', UserViewSet, basename='user')
 
 urlpatterns = [
-    # Эндпоинт для редактирования профиля
-    path('profile/', ProfileUpdateAPIView.as_view(), name='profile-update'),
+    path('', include(router.urls)),
 ]
