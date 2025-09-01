@@ -56,16 +56,23 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
 
 class RegistrationSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
-    username = serializers.CharField(required=True)
+    username = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'first_name', 'last_name', 'password')
+        fields = ('email', 'first_name', 'last_name', 'password', 'username')
 
     def create(self, validated_data):
+        email = validated_data['email']
+        username = validated_data.get('username') or email
+        
+        if User.objects.filter(username=username).exists():
+             import uuid
+             username = f"{username}_{uuid.uuid4().hex[:4]}"
+
         user = User.objects.create_user(
-            email=validated_data['email'],
-            username=validated_data['username'],
+            email=email,
+            username=username,
             first_name=validated_data.get('first_name', ''),
             last_name=validated_data.get('last_name', ''),
             password=validated_data['password']
