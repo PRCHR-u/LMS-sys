@@ -6,14 +6,24 @@ from users.permissions import IsModerator, IsOwner
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
 from paginators import CoursePaginator, LessonPaginator
 
 
 class CourseViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for interacting with Course instances.
+    Provides create, retrieve, update, partial_update, destroy, and list functionality for courses.
+    """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
     pagination_class = CoursePaginator
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ('title',)
+    ordering_fields = ('update_date',)
+
 
     def get_permissions(self):
         if self.action == 'create':
@@ -35,9 +45,17 @@ class CourseViewSet(viewsets.ModelViewSet):
         return Course.objects.all()
 
 class LessonViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for interacting with Lesson instances.
+    Provides create, retrieve, update, partial_update, destroy, and list functionality for lessons.
+    """
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     pagination_class = LessonPaginator
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ('title', 'course',)
+    ordering_fields = ('update_date',)
+
 
     def get_permissions(self):
         if self.action == 'create':
