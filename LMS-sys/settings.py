@@ -111,3 +111,7 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }
+
+# Stripe API keys
+STRIPE_API_KEY = 'your_stripe_api_key'  # Replace with your actual Stripe API key
+STRIPE_SECRET_KEY = 'your_stripe_secret_key'  # Replace with your actual Stripe secret key

@@ -77,6 +77,10 @@ class LessonViewSet(viewsets.ModelViewSet):
         return Lesson.objects.all()
 
 class SubscriptionAPIView(APIView):
+    """
+    API view for managing user subscriptions to courses.
+    Allows users to subscribe to or unsubscribe from a course.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, *args, **kwargs):

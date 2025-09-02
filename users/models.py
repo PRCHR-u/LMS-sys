@@ -18,10 +18,14 @@ class Payment(models.Model):
     amount = models.PositiveIntegerField()
 
     PAYMENT_METHODS = [
-        ('cash', 'Наличные'), # This was already here, keeping it.
+        ('cash', 'Наличные'),
         ('transfer', 'Перевод на счет'),
+        ('stripe', 'Stripe'),
     ]
-    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS)
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS, default='stripe')
+    stripe_session_id = models.CharField(max_length=255, null=True, blank=True)
+    payment_link = models.URLField(max_length=400, null=True, blank=True)
+
 
     def __str__(self):
         if self.paid_course:
