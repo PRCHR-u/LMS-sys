@@ -39,14 +39,22 @@ class CourseSerializer(serializers.ModelSerializer):
     """
     lesson_count = serializers.SerializerMethodField()
     lessons = LessonInCourseSerializer(many=True, read_only=True)
+    is_subscribed = serializers.SerializerMethodField()
 
     def get_lesson_count(self, obj):
         """Возвращает количество уроков в курсе"""
         return obj.lessons.count()
 
+    def get_is_subscribed(self, obj):
+        """Возвращает статус подписки текущего пользователя на курс"""
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return Subscription.objects.filter(user=user, course=obj).exists()
+        return False
+
     class Meta:
         model = Course
-        fields = '__all__'
+        fields = ['id', 'title', 'description', 'preview', 'owner', 'lesson_count', 'lessons', 'is_subscribed']
 
 
 class CourseDetailSerializer(serializers.ModelSerializer):
@@ -56,6 +64,7 @@ class CourseDetailSerializer(serializers.ModelSerializer):
     lesson_count = serializers.SerializerMethodField()
     lessons = LessonInCourseSerializer(many=True, read_only=True)
     owner_email = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
 
     def get_lesson_count(self, obj):
         """Возвращает количество уроков в курсе"""
@@ -65,9 +74,16 @@ class CourseDetailSerializer(serializers.ModelSerializer):
         """Возвращает email владельца курса"""
         return obj.owner.email if obj.owner else None
 
+    def get_is_subscribed(self, obj):
+        """Возвращает статус подписки текущего пользователя на курс"""
+        user = self.context['request'].user
+        if user.is_authenticated:
+            return Subscription.objects.filter(user=user, course=obj).exists()
+        return False
+
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'preview', 'owner', 'owner_email', 'lesson_count', 'lessons']
+        fields = ['id', 'title', 'description', 'preview', 'owner', 'owner_email', 'lesson_count', 'lessons', 'is_subscribed']
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:

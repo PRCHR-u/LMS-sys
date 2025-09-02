@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
-from paginators import CoursePaginator, LessonPaginator
+from paginators import CustomPaginator
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -19,7 +19,7 @@ class CourseViewSet(viewsets.ModelViewSet):
     """
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
-    pagination_class = CoursePaginator
+    pagination_class = CustomPaginator
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ('title',)
     ordering_fields = ('update_date',)
@@ -51,7 +51,7 @@ class LessonViewSet(viewsets.ModelViewSet):
     """
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
-    pagination_class = LessonPaginator
+    pagination_class = CustomPaginator
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ('title', 'course',)
     ordering_fields = ('update_date',)
