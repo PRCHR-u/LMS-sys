@@ -12,3 +12,6 @@ python-decouple==3.8
 Pillow
 drf-spectacular
 stripe
+celery
+redis
+django-celery-beat

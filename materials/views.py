@@ -10,7 +10,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 
 from paginators import CustomPaginator
-
+from .tasks import send_update_email
 
 class CourseViewSet(viewsets.ModelViewSet):
     """
@@ -23,7 +23,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ('title',)
     ordering_fields = ('update_date',)
-
 
     def get_permissions(self):
         if self.action == 'create':
@@ -38,6 +37,16 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """
+        Overrides the default update behavior to send email notifications to subscribers.
+        """
+        instance = serializer.save()
+        subscriptions = Subscription.objects.filter(course=instance)
+        for sub in subscriptions:
+            if sub.user.email:
+                send_update_email.delay(sub.user.email, instance.title)
 
     def get_queryset(self):
         if not self.request.user.groups.filter(name='Moderator').exists():
@@ -55,7 +64,6 @@ class LessonViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
     filterset_fields = ('title', 'course',)
     ordering_fields = ('update_date',)
-
 
     def get_permissions(self):
         if self.action == 'create':
