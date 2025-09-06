@@ -1,14 +1,91 @@
-# Django
+# Система LMS (Django)
 
-A Django starter template as per the docs: https://docs.djangoproject.com/en/5.0/intro/tutorial01/
+Это Система Управления Обучением (LMS), созданная на Django. Проект полностью контейнеризирован с использованием Docker и Docker Compose для обеспечения согласованной среды разработки и эксплуатации.
 
+## Необходимые условия
 
+Убедитесь, что на вашей системе установлены [Docker](https://docs.docker.com/get-docker/) и [Docker Compose](https://docs.docker.com/compose/install/).
 
-## Running the project
+## Начало работы
 
-To run the project, follow these steps:
+Следуйте этим шагам для настройки и локального запуска проекта.
 
-1. Navigate to the `mysite` directory: cd mysite
-2. Run the server: python manage.py runserver
+### 1. Настройка переменных окружения
 
+Проект использует файл `.env` для конфигурации. Шаблон представлен в файле `.env.example`.
 
+1.  **Создайте файл `.env` из шаблона:**
+    ```bash
+    cp .env.example .env
+    ```
+
+2.  **Отредактируйте файл `.env`** и впишите ваши реальные секретные значения для:
+    *   `SECRET_KEY` (вы можете использовать онлайн-генератор секретных ключей Django)
+    *   `STRIPE_API_KEY` и `STRIPE_SECRET_KEY`
+    *   `EMAIL_HOST_USER` и `EMAIL_HOST_PASSWORD`
+
+    Учетные данные базы данных по умолчанию будут работать "из коробки" с настройками Docker.
+
+### 2. Сборка и запуск проекта
+
+Используйте следующую команду, чтобы собрать Docker-образы и запустить все сервисы:
+
+```bash
+docker-compose up --build
+```
+
+После запуска сервисов приложение будет доступно по адресу [http://localhost:8000](http://localhost:8000).
+
+### 3. Применение миграций базы данных
+
+Откройте **новое окно терминала** и выполните следующую команду для применения миграций базы данных Django:
+
+```bash
+docker-compose exec web python manage.py migrate
+```
+
+Вы также можете использовать этот метод для создания суперпользователя:
+
+```bash
+docker-compose exec web python manage.py createsuperuser
+```
+
+## Проверка работоспособности сервисов
+
+После запуска вы можете проверить статус каждого сервиса:
+
+1.  **Общий статус:** Выполните команду `docker-compose ps`. Все сервисы должны быть в состоянии `Up` или `running`.
+
+2.  **Сервис `web` (Django):** Откройте в браузере `http://localhost:8000`. Если вы видите стартовую страницу Django, значит сервис работает. Успешное выполнение команды `migrate` (см. выше) также подтверждает, что `web` может подключиться к `db`.
+
+3.  **Сервис `db` (PostgreSQL):** Посмотрите логи контейнера командой `docker-compose logs db`. Если вы видите сообщения `database system is ready to accept connections`, база данных работает корректно.
+
+4.  **Сервис `redis`:** Выполните `docker-compose exec redis redis-cli ping`. В ответ вы должны получить `PONG`.
+
+5.  **Сервисы `worker` и `beat` (Celery):** Проверьте их логи. В логах `docker-compose logs worker` вы должны увидеть сообщение `celery@...: ready`. В логах `docker-compose logs beat` вы увидите, что планировщик запущен и отправляет задачи.
+
+## Повседневное использование
+
+*   **Чтобы запустить все сервисы:**
+    ```bash
+    docker-compose up
+    ```
+
+*   **Чтобы остановить все сервисы:**
+    ```bash
+    docker-compose down
+    ```
+
+*   **Чтобы выполнить любую management-команду:**
+    ```bash
+    docker-compose exec web python manage.py <ваша_команда>
+    ```
+
+## Сервисы
+
+Файл `docker-compose.yml` определяет следующие сервисы:
+*   `web`: Приложение Django.
+*   `db`: База данных PostgreSQL.
+*   `redis`: Сервер Redis, используется как брокер сообщений Celery.
+*   `worker`: Воркер Celery для фоновых задач.
+*   `beat`: Планировщик Celery beat для периодических задач.
