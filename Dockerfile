@@ -1,23 +1,28 @@
-# 1. Использование официального базового образа Python
-FROM python:3.11-slim
+# Используем официальный образ Python
+FROM python:3.10-slim
 
-# 2. Установка переменных окружения
+# Устанавливаем переменные окружения
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# 3. Установка системных зависимостей, необходимых для psycopg2 (PostgreSQL)
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# 4. Создание рабочей директории в контейнере
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# 5. Копирование файла с зависимостями и их установка
+# Устанавливаем зависимости
 COPY requirements.txt /app/
-RUN pip install --upgrade pip && \
-    pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. Копирование всего остального кода проекта в рабочую директорию
+# Копируем исходный код проекта
 COPY . /app/
+
+# Собираем статические файлы
+# Предполагается, что статика будет обрабатываться Nginx
+# В docker-compose.yml мы создадим volume для статики
+RUN python manage.py collectstatic --noinput
+
+# Gunicorn будет слушать этот порт внутри контейнера
+EXPOSE 8000
+
+# Запускаем Gunicorn
+# LMS-sys - это имя основной папки вашего Django проекта
+CMD ["gunicorn", "LMS-sys.wsgi:application", "--bind", "0.0.0.0:8000"]
