@@ -72,3 +72,40 @@ jobs:
         run: |
           python manage.py test --verbosity=2
 
+  deploy:
+    name: Deploy to Server
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature_2'
+    
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            echo "Starting deployment..."
+            cd ${{ secrets.PROJECT_PATH }}
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Install/update dependencies
+            pip install -r requirements.txt
+            
+            # Run migrations
+            python manage.py migrate --noinput
+            
+            # Collect static files
+            python manage.py collectstatic --noinput
+            
+            # Restart services (adjust based on your setup)
+            sudo systemctl restart gunicorn || true
+            sudo systemctl restart nginx || true
+            
+            echo "Deployment completed successfully!"
+
