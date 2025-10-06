@@ -91,8 +91,11 @@ jobs:
             echo "Starting deployment..."
             cd ${{ secrets.PROJECT_PATH }}
             
-            # Pull latest changes
-            git pull origin main
+            # Fetch the latest code from origin
+            git fetch origin
+            
+            # Checkout the specific commit that triggered the workflow
+            git checkout ${{ github.sha }}
             
             # Install/update dependencies
             pip install -r requirements.txt
@@ -108,4 +111,3 @@ jobs:
             sudo systemctl restart nginx || true
             
             echo "Deployment completed successfully!"
-
