@@ -1,0 +1,119 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, feature_2 ]
+  pull_request:
+    branches: [ main, feature_2 ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: lms
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    env:
+      DJANGO_SETTINGS_MODULE: LMS-sys.settings
+      POSTGRES_DB: lms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: 5432
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Wait for DB
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h 127.0.0.1 -p 5432 -U postgres; then
+              echo "Postgres is up"; break; fi; echo "Waiting for Postgres..."; sleep 2; done
+
+      - name: Django check and migrate
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lms
+        run: |
+          python manage.py collectstatic --noinput || true
+          python manage.py migrate --noinput
+          python manage.py check --deploy --fail-level WARNING || true
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/lms
+        run: |
+          python manage.py test --verbosity=2
+
+  deploy:
+    name: Deploy to Server
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature_2'
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            TRIMMED_PATH=$(echo "${{ secrets.PROJECT_PATH }}" | xargs)
+            echo "--- Docker Deployment Script Started ---"
+            echo "Verifying project path: $TRIMMED_PATH"
+
+            if [ ! -d "$TRIMMED_PATH" ]; then
+              echo "ERROR: Project directory '$TRIMMED_PATH' not found!"
+              exit 1
+            fi
+
+            cd "$TRIMMED_PATH"
+            echo "Changed directory to $(pwd)"
+
+            echo "--> Pulling latest code..."
+            git fetch origin
+            git checkout ${{ github.sha }}
+
+            echo "--> Stopping and removing old containers for a clean start..."
+            docker-compose down --remove-orphans
+
+            echo "--> Building and starting new services..."
+            docker-compose up -d --build
+
+            echo "--> Running database migrations inside the 'web' container..."
+            docker-compose exec -T web python manage.py migrate --noinput
+
+            echo "--> Collecting static files inside the 'web' container..."
+            docker-compose exec -T web python manage.py collectstatic --noinput
+
+            echo "--> DEPLOYMENT COMPLETED SUCCESSFULLY!"
