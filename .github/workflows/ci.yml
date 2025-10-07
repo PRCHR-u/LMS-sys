@@ -88,10 +88,6 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
-            echo "--- DEBUGGING DIRECTORY CONTENTS ---"
-            ls -la ${{ secrets.PROJECT_PATH }}
-            echo "--- END DEBUGGING ---"
-
             echo "Starting deployment..."
             cd ${{ secrets.PROJECT_PATH }}
             
