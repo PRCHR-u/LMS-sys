@@ -111,9 +111,9 @@ jobs:
             docker-compose up -d
 
             echo "--> Running database migrations inside the 'web' container..."
-            docker-compose exec web python manage.py migrate --noinput
+            docker-compose exec -T web python manage.py migrate --noinput
 
             echo "--> Collecting static files inside the 'web' container..."
-            docker-compose exec web python manage.py collectstatic --noinput
+            docker-compose exec -T web python manage.py collectstatic --noinput
 
             echo "--> DEPLOYMENT COMPLETED SUCCESSFULLY!"
