@@ -88,26 +88,43 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
-            echo "Starting deployment..."
-            cd ${{ secrets.PROJECT_PATH }}
-            
-            # Fetch the latest code from origin
+            # Trim leading/trailing whitespace from the secret
+            TRIMMED_PATH=$(echo "${{ secrets.PROJECT_PATH }}" | xargs)
+
+            echo "Deployment script started."
+            echo "Verifying project path..."
+
+            # Verify the path exists and is a directory
+            if [ -d "$TRIMMED_PATH" ]; then
+              echo "Directory '$TRIMMED_PATH' exists. Changing directory."
+              cd "$TRIMMED_PATH"
+              echo "Current directory:"
+              pwd
+            else
+              echo "ERROR: Directory '$TRIMMED_PATH' does NOT exist."
+              echo "Please ensure the PROJECT_PATH secret is set to the absolute path on the server."
+              # List the parent directory to help with debugging
+              PARENT_DIR=$(dirname "$TRIMMED_PATH")
+              echo "Attempting to list contents of parent directory: '$PARENT_DIR'"
+              ls -la "$PARENT_DIR"
+              exit 1
+            fi
+
+            echo "Fetching latest code from git..."
             git fetch origin
-            
-            # Checkout the specific commit that triggered the workflow
             git checkout ${{ github.sha }}
-            
-            # Install/update dependencies
+
+            echo "Installing dependencies..."
             pip install -r requirements.txt
-            
-            # Run migrations
+
+            echo "Running database migrations..."
             python manage.py migrate --noinput
-            
-            # Collect static files
+
+            echo "Collecting static files..."
             python manage.py collectstatic --noinput
-            
-            # Restart services (adjust based on your setup)
+
+            echo "Restarting services..."
             sudo systemctl restart gunicorn || true
             sudo systemctl restart nginx || true
-            
+
             echo "Deployment completed successfully!"
