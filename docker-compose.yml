@@ -11,13 +11,17 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
 
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/app
       - static_volume:/app/static
@@ -26,9 +30,14 @@ services:
       - 8000
     env_file:
       - ./.env
+    environment:
+      - POSTGRES_HOST=db
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        # redis is fast, no need for healthcheck
+        condition: service_started
 
   nginx:
     image: nginx:latest
