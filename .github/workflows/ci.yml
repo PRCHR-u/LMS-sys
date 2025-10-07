@@ -104,11 +104,11 @@ jobs:
             git fetch origin
             git checkout ${{ github.sha }}
 
-            echo "--> Building new Docker images..."
-            docker-compose build
+            echo "--> Stopping and removing old containers for a clean start..."
+            docker-compose down --remove-orphans
 
-            echo "--> Applying changes and restarting services..."
-            docker-compose up -d
+            echo "--> Building and starting new services..."
+            docker-compose up -d --build
 
             echo "--> Running database migrations inside the 'web' container..."
             docker-compose exec -T web python manage.py migrate --noinput
