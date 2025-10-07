@@ -75,8 +75,8 @@ DATABASES = {
         'NAME': config('POSTGRES_DB'),
         'USER': config('POSTGRES_USER'),
         'PASSWORD': config('POSTGRES_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default=5432, cast=int),
+        'HOST': config('POSTGRES_HOST', default='db'),
+        'PORT': config('POSTGRES_PORT', default=5432, cast=int),
     }
 }
 
@@ -126,8 +126,8 @@ STRIPE_API_KEY = config('STRIPE_API_KEY', 'your_stripe_api_key')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', 'your_stripe_secret_key')
 
 # Celery Configuration
-REDIS_HOST = config('REDISHOST', default='localhost')
-REDIS_PORT = config('REDISPORT', default=6379, cast=int)
+REDIS_HOST = config('REDIS_HOST', default='redis')
+REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
 
 CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
 CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/0'
