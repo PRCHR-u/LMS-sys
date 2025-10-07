@@ -88,48 +88,32 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
-            # HARDCODED PATH FOR FINAL DEBUGGING
-            PROJECT_DIR="/home/ubuntu/LMS-sys"
+            TRIMMED_PATH=$(echo "${{ secrets.PROJECT_PATH }}" | xargs)
+            echo "--- Docker Deployment Script Started ---"
+            echo "Verifying project path: $TRIMMED_PATH"
 
-            echo "Deployment script started."
-            echo "--> Attempting to deploy to: $PROJECT_DIR"
-
-            # Verify the path exists
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "--> ERROR: Hardcoded directory '$PROJECT_DIR' does NOT exist on the server."
-              echo "--> This is the final check. The path is definitively incorrect."
-              echo "--> Listing contents of /home/ubuntu/ to find the correct project folder:"
-              ls -la /home/ubuntu/
+            if [ ! -d "$TRIMMED_PATH" ]; then
+              echo "ERROR: Project directory '$TRIMMED_PATH' not found!"
               exit 1
             fi
 
-            cd "$PROJECT_DIR"
-            echo "--> Successfully changed directory to:"
-            pwd
+            cd "$TRIMMED_PATH"
+            echo "Changed directory to $(pwd)"
 
-            echo "--> Fetching latest code..."
+            echo "--> Pulling latest code..."
             git fetch origin
             git checkout ${{ github.sha }}
 
-            echo "--> Installing dependencies..."
-            # Using the python/pip from a virtual environment if it exists
-            if [ -f "venv/bin/pip" ]; then
-              venv/bin/pip install -r requirements.txt
-            else
-              pip install -r requirements.txt
-            fi
+            echo "--> Building new Docker images..."
+            docker-compose build
 
-            echo "--> Running database migrations..."
-            if [ -f "venv/bin/python" ]; then
-              venv/bin/python manage.py migrate --noinput
-              venv/bin/python manage.py collectstatic --noinput
-            else
-              python manage.py migrate --noinput
-              python manage.py collectstatic --noinput
-            fi
+            echo "--> Applying changes and restarting services..."
+            docker-compose up -d
 
-            echo "--> Restarting services..."
-            sudo systemctl restart gunicorn || true
-            sudo systemctl restart nginx || true
+            echo "--> Running database migrations inside the 'web' container..."
+            docker-compose exec web python manage.py migrate --noinput
+
+            echo "--> Collecting static files inside the 'web' container..."
+            docker-compose exec web python manage.py collectstatic --noinput
 
             echo "--> DEPLOYMENT COMPLETED SUCCESSFULLY!"
